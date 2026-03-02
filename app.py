@@ -178,13 +178,15 @@ def admin_login():
         return redirect('/admin-login')
 
     stored_password = admin['password']
+    # Step 2: Compare entered password with hashed password
+    stored_hashed_password = admin['password']
 
-    # 🔥 Only encode if string
-    if isinstance(stored_password, str):
-        stored_password = stored_password.encode('utf-8')
+    # If it is string, convert to bytes (safety check)
+    if isinstance(stored_hashed_password, str):
+        stored_hashed_password = stored_hashed_password.encode('utf-8')
 
-    if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
-        flash("Incorrect password!", "danger")
+    if not bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password):
+        flash("Incorrect password! Try again.", "danger")
         return redirect('/admin-login')
 
     session['admin_id'] = admin['admin_id']
