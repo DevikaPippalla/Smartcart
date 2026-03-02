@@ -42,8 +42,8 @@ mail = Mail(app)
 
 # -------------------- DB CONNECTION --------------------
 def get_db_connection():
-    conn = sqlite3.connect('smartcart.db')
-    conn.row_factory = sqlite3.Row   # 🔥 Important for dictionary style access
+    conn = sqlite3.connect("smartcart.db")
+    conn.row_factory = sqlite3.Row
     return conn
 #--------------------Home---------------------------
 @app.route('/')
