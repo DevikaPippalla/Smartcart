@@ -182,7 +182,7 @@ def admin_login():
         return redirect('/admin-login')
 
     # Step 2: Compare entered password with hashed password
-    stored_hashed_password = admin['password'].encode('utf-8')
+    stored_hashed_password = admin['password']
 
     if not bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password):
         flash("Incorrect password! Try again.", "danger")
@@ -749,7 +749,7 @@ def user_login():
         return redirect('/user-login')
 
     # Verify password
-    if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+    if not bcrypt.checkpw(password.encode('utf-8'), user['password']):
         flash("Incorrect password!", "danger")
         return redirect('/user-login')
 
