@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}
+Your Cart
+{% endblock %}
+
+{% block content %}
+
+<style>
+.cart-wrapper{
+    max-width:1100px;
+    margin:40px auto;
+    padding:0 20px;
+}
+
+/* Title */
+.cart-title{
+    text-align:center;
+    margin-bottom:35px;
+}
+
+/* Cards Layout */
+.cart-container{
+    display:flex;
+    flex-wrap:wrap;
+    gap:25px;
+    justify-content:center;
+}
+
+/* Product Card */
+.cart-card{
+    width:230px;
+    background:white;
+    border-radius:15px;
+    padding:15px;
+    box-shadow:0 6px 15px rgba(0,0,0,0.1);
+    text-align:center;
+    transition:0.3s;
+}
+
+.cart-card:hover{
+    transform:translateY(-5px);
+}
+
+/* Image */
+.cart-card img{
+    width:100%;
+    height:150px;
+    object-fit:cover;
+    border-radius:10px;
+}
+
+/* Name */
+.cart-card h4{
+    margin:10px 0 6px;
+    font-size:17px;
+}
+
+/* Text */
+.cart-card p{
+    font-size:14px;
+    margin:5px 0;
+}
+
+/* Quantity */
+.qty-box{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:15px;
+    margin:10px 0;
+}
+
+.qty-box a{
+    text-decoration:none;
+    background:#f0f0f0;
+    padding:5px 10px;
+    border-radius:6px;
+    color:black;
+    font-weight:bold;
+}
+
+/* Remove Button */
+.remove-btn{
+    display:inline-block;
+    margin-top:10px;
+    background:#ff4d4d;
+    color:white;
+    padding:6px 14px;
+    border-radius:6px;
+    text-decoration:none;
+    font-size:13px;
+}
+
+/* Summary Card */
+.cart-summary{
+    margin-top:40px;
+    text-align:center;
+}
+
+.summary-card{
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.1);
+    width:350px;
+    margin:auto;
+}
+
+/* Buttons */
+.continue-btn{
+    display:block;
+    margin:12px auto;
+    padding:9px 20px;
+    background:#2d6cdf;
+    color:white;
+    border-radius:8px;
+    text-decoration:none;
+    font-size:14px;
+}
+
+.checkout-btn{
+    display:block;
+    margin:12px auto;
+    padding:9px 20px;
+    background:#28a745;
+    color:white;
+    border-radius:8px;
+    text-decoration:none;
+    font-size:14px;
+}
+
+/* Empty Cart Card */
+.empty-box{
+    display:flex;
+    justify-content:center;
+}
+
+.empty-card{
+    background:white;
+    padding:40px;
+    border-radius:15px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.1);
+    width:350px;
+    text-align:center;
+}
+</style>
+
+<div class="page-wrapper">
+<div class="cart-wrapper">
+
+<h2 class="cart-title">🛒 Your Cart</h2>
+
+{% if not cart %}
+
+<div class="empty-box">
+    <div class="empty-card">
+        <h3>Your cart is empty</h3>
+        <p style="margin:15px 0;">Looks like you haven’t added anything yet.</p>
+
+        <a href="/user/products" class="continue-btn">
+            Shop Now
+        </a>
+
+        <a href="/user/address" class="checkout-btn">
+            Proceed to Checkout
+        </a>
+    </div>
+</div>
+
+{% else %}
+
+<div class="cart-container">
+
+    {% for pid, item in cart.items() %}
+
+    <div class="cart-card">
+
+        <img src="/static/uploads/product_images/{{ item.image }}">
+
+        <h4>{{ item.name }}</h4>
+
+        <p>Price: ₹{{ item.price }}</p>
+
+        <div class="qty-box">
+            <a href="/user/cart/decrease/{{ pid }}">−</a>
+            <span>{{ item.quantity }}</span>
+            <a href="/user/cart/increase/{{ pid }}">+</a>
+        </div>
+
+        <p><strong>Total:</strong> ₹{{ item.price * item.quantity }}</p>
+
+        <a href="/user/cart/remove/{{ pid }}" class="remove-btn">
+            Remove
+        </a>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+<div class="cart-summary">
+    <div class="summary-card">
+        <h3>Grand Total: ₹{{ grand_total }}</h3>
+
+        <a href="/user/address" class="checkout-btn">
+            Proceed to Pay
+        </a>
+
+        <a href="/user/products" class="continue-btn">
+            Continue Shopping
+        </a>
+    </div>
+</div>
+</div>
+{% endif %}
+
+</div>
+
+{% endblock %}

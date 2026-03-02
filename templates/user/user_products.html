@@ -1,0 +1,85 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-wrapper">
+
+    <div class="content-container">
+
+        <h2 class="page-title" style="color: black;">All Products</h2>
+
+        <!-- 🔔 Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for category, message in messages %}
+            <div class="flash {{ category }}">
+                {{ message }}
+            </div>
+          {% endfor %}
+        {% endwith %}
+
+        <!-- 🔍 SEARCH & FILTER BAR -->
+        <div class="filter-bar">
+
+            <form method="GET" action="/user/products" class="filter-form">
+                <input type="text"
+                       name="search"
+                       placeholder="Search product..."
+                       value="{{ request.args.get('search', '') }}">
+                <button type="submit">Search</button>
+            </form>
+
+            <form method="GET" action="/user/products" class="filter-form">
+                <select name="category">
+                    <option value="">All Categories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.category }}"
+                        {% if request.args.get('category') == cat.category %}selected{% endif %}>
+                        {{ cat.category }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Filter</button>
+            </form>
+
+        </div>
+
+        <!-- 🔹 PRODUCT GRID -->
+        <div class="product-grid">
+
+            {% for product in products %}
+            <div class="product-card">
+
+                <!-- Product Image -->
+                <div class="product-image">
+                    <img src="{{ url_for('static',
+                        filename='uploads/product_images/' ~ product.image) }}">
+                </div>
+
+                <!-- Product Info -->
+                <h3>{{ product.name }}</h3>
+                <p class="category">{{ product.category }}</p>
+                <p class="price">₹{{ product.price }}</p>
+
+                <!-- Buttons -->
+                <a href="/user/product/{{ product.product_id }}"
+                   class="btn-view">
+                    View Details
+                </a>
+
+                <a href="/user/add-to-cart/{{ product.product_id }}"
+                   class="btn-cart">
+                    Add to Cart
+                </a>
+
+            </div>
+            {% endfor %}
+
+        </div>
+
+    </div>
+    
+
+</div>
+
+{% endblock %}

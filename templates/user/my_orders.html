@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}My Orders{% endblock %}
+
+{% block content %}
+
+<style>
+
+.orders-section{
+    width:100%;
+    padding:50px 40px;
+}
+
+.orders-title{
+    text-align:center;
+    margin-bottom:40px;
+}
+
+.orders-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap:30px;
+    max-width:1100px;
+    margin:auto;
+}
+
+.order-card{
+    background:#ffffff;
+    border-radius:18px;
+    padding:25px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.12);
+    transition:0.3s ease;
+    text-align:center;
+}
+
+.order-card:hover{
+    transform:translateY(-5px);
+}
+
+.order-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:15px;
+}
+
+.order-header h3{
+    font-size:20px;
+    margin:0;
+}
+
+.status-badge{
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:600;
+}
+
+.status-success{
+    background:#d4edda;
+    color:#155724;
+}
+
+.status-failed{
+    background:#f8d7da;
+    color:#721c24;
+}
+
+.order-info{
+    margin-top:10px;
+    line-height:1.8;
+    color:#555;
+    font-size:15px;
+}
+
+.order-actions{
+    margin-top:20px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.btn-custom{
+    padding:10px;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:500;
+    transition:0.3s;
+}
+
+.btn-primary{
+    background:#007bff;
+    color:#fff;
+}
+
+.btn-primary:hover{
+    background:#0056b3;
+}
+
+.btn-dark{
+    background:#343a40;
+    color:#fff;
+}
+
+.btn-dark:hover{
+    background:#1d2124;
+}
+
+.empty-box{
+    text-align:center;
+    padding:40px;
+    background:#fff;
+    border-radius:15px;
+    box-shadow:0 12px 25px rgba(0,0,0,0.12);
+    max-width:500px;
+    margin:auto;
+}
+
+</style>
+
+<div class="page-wrapper">
+<div class="orders-section">
+
+    <div class="orders-title">
+        <h2>📦 My Orders</h2>
+    </div>
+
+    {% if orders|length == 0 %}
+
+        <div class="empty-box">
+            <p>You have not placed any orders yet.</p>
+            <a href="/user/products" class="btn-custom btn-primary">
+                Start Shopping
+            </a>
+        </div>
+
+    {% else %}
+
+    <div class="orders-grid">
+
+        {% for order in orders %}
+        <div class="order-card">
+
+            <div class="order-header">
+                <h3>Order #{{ order.order_id }}</h3>
+
+                {% if order.payment_status == "Success" %}
+                    <span class="status-badge status-success">
+                        {{ order.payment_status }}
+                    </span>
+                {% else %}
+                    <span class="status-badge status-failed">
+                        {{ order.payment_status }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="order-info">
+             <p><strong>Amount:</strong> ₹{{ order.amount }}</p>
+             <p><strong>Date:</strong> {{ order.created_at }}</p>
+            </div>
+
+            <div class="order-actions">
+                <a href="/user/order-success/{{ order.order_id }}"
+                   class="btn-custom btn-primary">
+                    View Details
+                </a>
+
+                <a href="/user/download-invoice/{{ order.order_id }}"
+                   class="btn-custom btn-dark">
+                    Download Invoice
+                </a>
+            </div>
+
+        </div>
+        {% endfor %}
+
+    </div>
+
+    {% endif %}
+
+</div>
+</div>
+{% endblock %}

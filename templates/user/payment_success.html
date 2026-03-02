@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}
+Payment Successful
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+.payment-box {
+
+    width: 50%;
+    margin: auto;
+    margin-top: 50px;
+    padding: 25px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+
+}
+
+.success {
+
+    color: green;
+    font-size: 24px;
+    margin-bottom: 20px;
+
+}
+
+.info {
+
+    font-size: 16px;
+    margin-top: 10px;
+
+}
+
+.btn {
+
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 15px;
+    background-color: #0077ff;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+
+}
+
+.btn:hover {
+
+    background-color: #005fcc;
+
+}
+
+</style>
+
+
+
+<div class="payment-box">
+
+
+<h2 class="success">
+
+✅ Payment Successful!
+
+</h2>
+
+
+<p class="info">
+
+<strong>Payment ID:</strong>
+
+{{ payment_id }}
+
+</p>
+
+
+
+<p class="info">
+
+<strong>Order ID:</strong>
+
+{{ order_id }}
+
+</p>
+
+
+
+<a href="/user/products" class="btn">
+
+Continue Shopping
+
+</a>
+
+
+
+<a href="/user/my-orders" class="btn">
+
+View My Orders
+
+</a>
+
+
+</div>
+
+
+{% endblock %}
