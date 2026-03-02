@@ -42,10 +42,9 @@ mail = Mail(app)
 
 # -------------------- DB CONNECTION --------------------
 def get_db_connection():
-    conn = sqlite3.connect("smartcart.db")
-    conn.row_factory = sqlite3.Row
+    conn = sqlite3.connect('smartcart.db')
+    conn.row_factory = sqlite3.Row   # 🔥 Important for dictionary style access
     return conn
-
 #--------------------Home---------------------------
 @app.route('/')
 def Home():
@@ -166,7 +165,7 @@ def admin_login():
     password = request.form['password']
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor()   # ❌ no dictionary=True
 
     cursor.execute("SELECT * FROM admin WHERE email=?", (email,))
     admin = cursor.fetchone()
@@ -174,13 +173,17 @@ def admin_login():
     cursor.close()
     conn.close()
 
-    if admin is None:
+    if not admin:
         flash("Email not found!", "danger")
         return redirect('/admin-login')
 
-    stored_hashed_password = admin['password']   # ✅ NO .encode here
+    stored_password = admin['password']
 
-    if not bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password):
+    # 🔥 Only encode if string
+    if isinstance(stored_password, str):
+        stored_password = stored_password.encode('utf-8')
+
+    if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
         flash("Incorrect password!", "danger")
         return redirect('/admin-login')
 
@@ -188,9 +191,8 @@ def admin_login():
     session['admin_name'] = admin['name']
     session['admin_email'] = admin['email']
 
-    flash("Login Successful!", "success")
+    flash("Login successful!", "success")
     return redirect('/admin-dashboard')
-
 # =================================================================
 # ROUTE 5: ADMIN DASHBOARD (PROTECTED ROUTE)
 # =================================================================
@@ -544,10 +546,16 @@ def admin_profile():
 # =================================================================
 @app.route('/admin/profile', methods=['GET', 'POST'])
 def admin_profile_update():
-    conn = get_db_connection()
-    cursor = conn.cursor()  # IMPORTANT
 
-    admin_id = session.get('admin_id')
+    # 🔥 1️⃣ Session check add cheyyali
+    if 'admin_id' not in session:
+        flash("Please login first!", "danger")
+        return redirect('/admin-login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    admin_id = session['admin_id']
 
     cursor.execute("SELECT * FROM admin WHERE admin_id = ?", (admin_id,))
     admin = cursor.fetchone()
@@ -561,20 +569,24 @@ def admin_profile_update():
 
         old_image_name = admin['profile_image']
 
-        # Image upload
+        # 🔥 2️⃣ Secure image upload
         if image and image.filename != "":
-            image_name = image.filename
-            image.save(os.path.join('static/uploads/admin_profiles', image_name))
+            from werkzeug.utils import secure_filename
+            image_name = secure_filename(image.filename)
+            image.save(os.path.join(app.config['ADMIN_UPLOAD_FOLDER'], image_name))
         else:
             image_name = old_image_name
 
-        # Password update only if entered
+        # 🔥 3️⃣ IMPORTANT: Hash password if entered
         if password:
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
             cursor.execute("""
                 UPDATE admin
                 SET name=?, email=?, password=?, profile_image=?
                 WHERE admin_id=?
-            """, (name, email, password, image_name, admin_id))
+            """, (name, email, hashed_password, image_name, admin_id))
+
         else:
             cursor.execute("""
                 UPDATE admin
@@ -583,10 +595,14 @@ def admin_profile_update():
             """, (name, email, image_name, admin_id))
 
         conn.commit()
+        cursor.close()
+        conn.close()
 
         flash("Profile Updated Successfully!", "success")
         return redirect('/admin/profile')
 
+    cursor.close()
+    conn.close()
     return render_template('admin/admin_profile.html', admin=admin)
 
 # ---------------Admin Forget password---------------
@@ -740,21 +756,18 @@ def user_login():
     conn.close()
 
     if not user:
-        flash("Email not found! Please register.", "danger")
+        flash("Email not found!", "danger")
         return redirect('/user-login')
 
     stored_password = user['password']
 
-    # 🔥 Ensure stored password is bytes (bcrypt needs bytes)
     if isinstance(stored_password, str):
         stored_password = stored_password.encode('utf-8')
 
-    # Verify password
     if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
         flash("Incorrect password!", "danger")
         return redirect('/user-login')
 
-    # Create user session
     session['user_id'] = user['user_id']
     session['user_name'] = user['name']
     session['user_email'] = user['email']
@@ -1227,7 +1240,7 @@ def download_invoice(order_id):
 @app.route("/user/address", methods=["GET", "POST"])
 def address():
     if "user_id" not in session:
-        return redirect("/login")
+        return redirect("/user-login")   # correct route pettu bro
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -1236,15 +1249,15 @@ def address():
         cursor.execute("""
             INSERT INTO addresses
             (user_id, full_name, phone, address_line, city, state, pincode)
-            VALUES (?, ?, ?, ?,?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             session["user_id"],
-            request.form["full_name"],
-            request.form["phone"],
-            request.form["address"],
-            request.form["city"],
-            request.form["state"],
-            request.form["pincode"]
+            request.form.get("full_name"),
+            request.form.get("phone"),
+            request.form.get("address"),   # DB lo column address_line kabatti match ayye laga undali
+            request.form.get("city"),
+            request.form.get("state"),
+            request.form.get("pincode")
         ))
 
         conn.commit()
@@ -1252,7 +1265,8 @@ def address():
 
         return redirect("/user/pay")
 
-    return render_template("/user/address.html")
+    conn.close()   # GET request lo kuda close cheyali
+    return render_template("user/address.html")
 
 #----------------my orders-------------------
 @app.route('/user/my-orders')
