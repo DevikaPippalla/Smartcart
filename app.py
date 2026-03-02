@@ -159,15 +159,12 @@ def verify_otp_post():
 @app.route('/admin-login', methods=['GET', 'POST'])
 def admin_login():
 
-    # Show login page
     if request.method == 'GET':
-        return render_template("admin/admin_login.html",navbar_type ="public")
+        return render_template("admin/admin_login.html", navbar_type="public")
 
-    # POST → Validate login
     email = request.form['email']
     password = request.form['password']
 
-    # Step 1: Check if admin email exists
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -178,17 +175,15 @@ def admin_login():
     conn.close()
 
     if admin is None:
-        flash("Email not found! Please register first.", "danger")
+        flash("Email not found!", "danger")
         return redirect('/admin-login')
 
-    # Step 2: Compare entered password with hashed password
-    stored_hashed_password = admin['password']
+    stored_hashed_password = admin['password']   # ✅ NO .encode here
 
     if not bcrypt.checkpw(password.encode('utf-8'), stored_hashed_password):
-        flash("Incorrect password! Try again.", "danger")
+        flash("Incorrect password!", "danger")
         return redirect('/admin-login')
 
-    # Step 5: If login success → Create admin session
     session['admin_id'] = admin['admin_id']
     session['admin_name'] = admin['name']
     session['admin_email'] = admin['email']
@@ -730,7 +725,7 @@ def user_register():
 def user_login():
 
     if request.method == 'GET':
-        return render_template("user/user_login.html",navbar_type ="public")
+        return render_template("user/user_login.html", navbar_type="public")
 
     email = request.form['email']
     password = request.form['password']
@@ -748,8 +743,14 @@ def user_login():
         flash("Email not found! Please register.", "danger")
         return redirect('/user-login')
 
+    stored_password = user['password']
+
+    # 🔥 Ensure stored password is bytes (bcrypt needs bytes)
+    if isinstance(stored_password, str):
+        stored_password = stored_password.encode('utf-8')
+
     # Verify password
-    if not bcrypt.checkpw(password.encode('utf-8'), user['password']):
+    if not bcrypt.checkpw(password.encode('utf-8'), stored_password):
         flash("Incorrect password!", "danger")
         return redirect('/user-login')
 
@@ -760,7 +761,6 @@ def user_login():
 
     flash("Login successful!", "success")
     return redirect('/user-dashboard')
-
 # =================================================================
 # ROUTE: USER DASHBOARD
 # =================================================================
