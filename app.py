@@ -79,7 +79,7 @@ def admin_signup():
 
     # 1️⃣ Check if admin email already exists
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute("SELECT admin_id FROM admin WHERE email=?", (email,))
     existing_admin = cursor.fetchone()
     cursor.close()
@@ -169,7 +169,7 @@ def admin_login():
 
     # Step 1: Check if admin email exists
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM admin WHERE email=?", (email,))
     admin = cursor.fetchone()
@@ -208,14 +208,10 @@ def admin_dashboard():
         return redirect('/admin-login')
 
     try:
-        conn = sqlite3.connector.connect(
-            host="localhost",
-            user="root",
-            password="9381540490",   # <-- nee MySQL password pettu
-            database="smartcart_db"   # <-- nee original DB name pettu
-        )
-
-        cursor = conn.cursor(dictionary=True)
+        # ✅ SQLite connection
+        conn = sqlite3.connect("smartcart.db")
+        conn.row_factory = sqlite3.Row   # 🔥 dictionary access kosam
+        cursor = conn.cursor()
 
         # Get all products
         cursor.execute("SELECT * FROM products")
@@ -240,7 +236,6 @@ def admin_dashboard():
         categories=categories,
         navbar_type="admin"
     )
-
 
 # =================================================================
 # ROUTE 6: ADMIN LOGOUT
@@ -335,7 +330,7 @@ def item_list():
     category_filter = request.args.get('category', '')
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     # 1️⃣ Fetch category list for dropdown
     cursor.execute("SELECT DISTINCT category FROM products")
@@ -377,7 +372,7 @@ def view_item(item_id):
         return redirect('/admin-login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM products WHERE product_id = ?", (item_id,))
     product = cursor.fetchone()
@@ -404,7 +399,7 @@ def update_item_page(item_id):
 
     # Fetch product data
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM products WHERE product_id = ?", (item_id,))
     product = cursor.fetchone()
@@ -438,7 +433,7 @@ def update_item(item_id):
 
     # 2️⃣ Fetch old product data
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute("SELECT * FROM products WHERE product_id = ?", (item_id,))
     product = cursor.fetchone()
 
@@ -495,7 +490,7 @@ def delete_item(item_id):
         return redirect('/admin-login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     # 1️⃣ Fetch product to get image name
     cursor.execute("SELECT image FROM products WHERE product_id=?", (item_id,))
@@ -539,7 +534,7 @@ def admin_profile():
     admin_id = session['admin_id']
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM admin WHERE admin_id = ?", (admin_id,))
     admin = cursor.fetchone()
@@ -555,7 +550,7 @@ def admin_profile():
 @app.route('/admin/profile', methods=['GET', 'POST'])
 def admin_profile_update():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)  # IMPORTANT
+    cursor = conn.cursor()  # IMPORTANT
 
     admin_id = session.get('admin_id')
 
@@ -703,7 +698,7 @@ def user_register():
 
     # Check if user already exists
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM users WHERE email=?", (email,))
     existing_user = cursor.fetchone()
@@ -741,7 +736,7 @@ def user_login():
     password = request.form['password']
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM users WHERE email=?", (email,))
     user = cursor.fetchone()
@@ -840,7 +835,7 @@ def user_products():
     category_filter = request.args.get('category', '')
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     # Fetch categories for filter dropdown
     cursor.execute("SELECT DISTINCT category FROM products")
@@ -882,7 +877,7 @@ def user_product_details(product_id):
         return redirect('/user-login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM products WHERE product_id = ?", (product_id,))
     product = cursor.fetchone()
@@ -914,7 +909,7 @@ def add_to_cart(product_id):
 
     # Get product
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
     cursor.execute("SELECT * FROM products WHERE product_id=?", (product_id,))
     product = cursor.fetchone()
     cursor.close()
@@ -1080,7 +1075,7 @@ def order_success(order_db_id):
         return redirect('/user-login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM orders WHERE order_id=? AND user_id=?", (order_db_id, session['user_id']))
     order = cursor.fetchone()
@@ -1197,7 +1192,7 @@ def download_invoice(order_id):
 
     # Fetch order
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
     cursor.execute("SELECT * FROM orders WHERE order_id=? AND user_id=?",
                    (order_id, session['user_id']))
@@ -1267,7 +1262,7 @@ def my_orders():
         return redirect('/user-login')
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)   # ✅ IMPORTANT
+    cursor = conn.cursor()   # ✅ IMPORTANT
 
     cursor.execute("""
         SELECT order_id, amount, payment_status, created_at
