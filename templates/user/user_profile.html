@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}User Profile{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+    <div class="card">
+
+        <h2>User Profile</h2>
+
+        <!-- Profile Image -->
+        {% if user.profile_image %}
+            <img src="{{ url_for('static', filename='uploads/user_profiles/' + user.profile_image) }}"
+                 width="120" height="120"
+                 style="border-radius:50%; margin-bottom:15px;">
+        {% else %}
+            <img src="{{ url_for('static', filename='default-profile.png') }}"
+                 width="120" height="120"
+                 style="border-radius:50%; margin-bottom:15px;">
+        {% endif %}
+
+        <form method="POST" action="/user/profile" enctype="multipart/form-data">
+
+            <input type="text"
+                   name="name"
+                   value="{{ user.name }}"
+                   placeholder="Full Name"
+                   required>
+
+            <input type="email"
+                   name="email"
+                   value="{{ user.email }}"
+                   placeholder="Email Address"
+                   required>
+
+            <input type="password"
+                   name="password"
+                   placeholder="New Password (optional)">
+
+            <input type="file"
+                   name="profile_image"
+                   accept="image/*">
+
+            <button type="submit">Update Profile</button>
+            <a href="/user-dashboard">Back to Dashboard</a>
+
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -61,12 +61,12 @@
                         <tr>
                             <td>{{ product.product_id }}</td>
                             <td>
-                                {% if product.image %}
-                                <img class="product-img"
-                                src="{{ url_for('static', filename='uploads/product_images/' + product.image) }}"
-                                alt="Product Image">
+                               {% if product.image %}
+                                <img src="{{ url_for('static', filename='uploads/product_images/' ~ product.image) }}"
+                                    class="product-img"
+                                    alt="Product Image">
                                 {% else %}
-                                    <p>No Image</p>
+                                <p>No Image</p>
                                 {% endif %}
                             </td>
 

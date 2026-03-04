@@ -3,7 +3,10 @@ CREATE TABLE users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     email TEXT UNIQUE,
-    password TEXT
+    password TEXT,
+    profile_image TEXT,
+    reset_token TEXT,
+    token_expiry TEXT
 );
 
 -- ADMIN TABLE
@@ -49,6 +52,7 @@ CREATE TABLE orders (
     razorpay_payment_id TEXT,
     amount REAL,
     payment_status TEXT,
+    address_id INTEGER NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
@@ -63,4 +67,15 @@ CREATE TABLE order_items (
     price REAL,
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
     FOREIGN KEY (product_id) REFERENCES products(product_id)
+);
+
+CREATE TABLE user_addresses (
+    address_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    full_name TEXT,
+    phone TEXT,
+    address TEXT,
+    city TEXT,
+    state TEXT,
+    pincode TEXT
 );

@@ -28,6 +28,8 @@ app.config['ADMIN_UPLOAD_FOLDER'] = os.path.join(
     BASE_DIR, 'static', 'uploads', 'admin_profiles'
 )
 
+app.config['USER_UPLOAD_FOLDER'] = 'static/uploads/user_profiles'
+
 # Create folder if not exists
 os.makedirs(app.config['ADMIN_UPLOAD_FOLDER'], exist_ok=True)
 
@@ -491,7 +493,7 @@ def delete_item(item_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # 1️⃣ Fetch product to get image name
+    # Fetch product image
     cursor.execute("SELECT image FROM products WHERE product_id=?", (item_id,))
     product = cursor.fetchone()
 
@@ -501,19 +503,15 @@ def delete_item(item_id):
 
     image_name = product['image']
 
-    # Delete image from folder
+    # Delete image file
     image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_name)
     if os.path.exists(image_path):
         os.remove(image_path)
 
-    # 2️⃣ Delete product from DB
+    # Delete product from DB
     cursor.execute("DELETE FROM products WHERE product_id=?", (item_id,))
     conn.commit()
-    cursor.execute(
-    "UPDATE products SET is_active=FALSE WHERE product_id=?",
-    (item_id,)
-    )
-    conn.commit()
+
     cursor.close()
     conn.close()
 
@@ -625,7 +623,7 @@ def admin_forgot_password():
             return redirect('/admin-forgot-password')
 
         token = secrets.token_urlsafe(32)
-        expiry = datetime.utcnow() + timedelta(minutes=15)
+        expiry = (datetime.utcnow() + timedelta(minutes=15)).isoformat()
 
         cursor.execute(
             "UPDATE admin SET reset_token=?, token_expiry=? WHERE email=?",
@@ -663,8 +661,14 @@ def admin_reset_password(token):
     admin = cursor.fetchone()
 
     # 2️⃣ Invalid or expired token
-    if not admin or admin['token_expiry'] < datetime.utcnow():
-        flash("Invalid or expired reset link!", "danger")
+    if not admin:
+        flash("Invalid reset link!", "danger")
+        return redirect('/admin-login')
+
+    expiry_time = datetime.fromisoformat(admin['token_expiry'])
+
+    if expiry_time < datetime.utcnow():
+        flash("Reset link expired!", "danger")
         return redirect('/admin-login')
 
     # 3️⃣ If form submitted → update password
@@ -821,6 +825,189 @@ def user_dashboard():
         categories=categories,
         navbar_type="user"
     )
+#------user forgot-----------------------------------------
+@app.route('/user-forgot-password', methods=['GET', 'POST'])
+def user_forgot_password():
+
+    if request.method == 'POST':
+        email = request.form['email']
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM users WHERE email=?", (email,))
+        user = cursor.fetchone()
+
+        if not user:
+            flash("Please enter valid registered email!", "danger")
+            return redirect('/user-forgot-password')
+
+        token = secrets.token_urlsafe(32)
+        expiry = (datetime.utcnow() + timedelta(minutes=15)).isoformat()
+
+        cursor.execute(
+            "UPDATE users SET reset_token=?, token_expiry=? WHERE email=?",
+            (token, expiry, email)
+        )
+        conn.commit()
+
+        reset_link = url_for('user_reset_password', token=token, _external=True)
+
+        msg = Message(
+            subject="Reset Your Password",
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email]
+        )
+        msg.body = f"Click the link to reset your password:\n{reset_link}"
+        mail.send(msg)
+
+        flash("Reset link sent to your email!", "success")
+        return redirect('/user-login')
+
+    return render_template('user/user_forgot.html', navbar_type="public")
+
+#---------user-reset-password-----------------------------
+@app.route('/user-reset-password/<token>', methods=['GET', 'POST'])
+def user_reset_password(token):
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # 1️⃣ Find user by token
+    cursor.execute(
+        "SELECT * FROM users WHERE reset_token=?",
+        (token,)
+    )
+    user = cursor.fetchone()
+
+    # 2️⃣ Invalid or expired token
+   
+    if not user:
+        flash("Invalid reset link!", "danger")
+        return redirect('/user-login')
+
+    expiry_time = datetime.fromisoformat(user['token_expiry'])
+
+    if expiry_time < datetime.utcnow():
+        flash("Reset link expired!", "danger")
+        return redirect('/user-login')
+    
+    # 3️⃣ If form submitted → update password
+    if request.method == 'POST':
+        new_password = request.form['password']
+
+        hashed_password = bcrypt.hashpw(
+            new_password.encode('utf-8'),
+            bcrypt.gensalt()
+        )
+
+        cursor.execute(
+            """
+            UPDATE users
+            SET password=?, reset_token=NULL, token_expiry=NULL
+            WHERE user_id=?
+            """,
+            (hashed_password, user['user_id'])
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        flash("Password updated successfully. Please login!", "success")
+        return redirect('/user-login')
+
+    return render_template(
+        "user/user_reset_password.html",
+        navbar_type="public"
+    )
+
+# =================================================================
+# USER PROFILE VIEW
+# =================================================================
+@app.route('/user/profile', methods=['GET'])
+def user_profile():
+
+    if 'user_id' not in session:
+        flash("Please login!", "danger")
+        return redirect('/user-login')
+
+    user_id = session['user_id']
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return render_template(
+        "user/user_profile.html",
+        user=user,
+        navbar_type="user"
+    )
+
+# =================================================================
+# USER PROFILE UPDATE
+# =================================================================
+@app.route('/user/profile', methods=['POST'])
+def user_profile_update():
+
+    if 'user_id' not in session:
+        flash("Please login first!", "danger")
+        return redirect('/user-login')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    user_id = session['user_id']
+
+    cursor.execute("SELECT * FROM users WHERE user_id = ?", (user_id,))
+    user = cursor.fetchone()
+
+    name = request.form['name']
+    email = request.form['email']
+    password = request.form['password']
+    image = request.files['profile_image']
+
+    old_image_name = user['profile_image']
+
+    # ✅ Secure Image Upload
+    if image and image.filename != "":
+        from werkzeug.utils import secure_filename
+        image_name = secure_filename(image.filename)
+        image.save(os.path.join(app.config['USER_UPLOAD_FOLDER'], image_name))
+    else:
+        image_name = old_image_name
+
+    # ✅ Password Hash if Entered
+    if password:
+        hashed_password = bcrypt.hashpw(
+            password.encode('utf-8'),
+            bcrypt.gensalt()
+        )
+
+        cursor.execute("""
+            UPDATE users
+            SET name=?, email=?, password=?, profile_image=?
+            WHERE user_id=?
+        """, (name, email, hashed_password, image_name, user_id))
+
+    else:
+        cursor.execute("""
+            UPDATE users
+            SET name=?, email=?, profile_image=?
+            WHERE user_id=?
+        """, (name, email, image_name, user_id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    flash("Profile Updated Successfully!", "success")
+    return redirect('/user/profile')
 
 # =================================================================
 # ROUTE: USER LOGOUT
@@ -1205,33 +1392,52 @@ def download_invoice(order_id):
         flash("Please login!", "danger")
         return redirect('/user-login')
 
-    # Fetch order
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM orders WHERE order_id=? AND user_id=?",
-                   (order_id, session['user_id']))
+    # Fetch order
+    cursor.execute("""
+        SELECT * FROM orders 
+        WHERE order_id=? AND user_id=?
+    """, (order_id, session['user_id']))
     order = cursor.fetchone()
-
-    cursor.execute("SELECT * FROM order_items WHERE order_id=?", (order_id,))
-    items = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
 
     if not order:
         flash("Order not found.", "danger")
         return redirect('/user/my-orders')
 
+    # Fetch order items
+    cursor.execute("""
+        SELECT * FROM order_items 
+        WHERE order_id=?
+    """, (order_id,))
+    items = cursor.fetchall()
+
+    # 🔥 Fetch Address (Latest Address)
+    cursor.execute("""
+        SELECT * FROM user_addresses
+        WHERE user_id=?
+        ORDER BY address_id DESC
+        LIMIT 1
+    """, (session['user_id'],))
+    address = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
     # Render invoice HTML
-    html = render_template("user/invoice.html", order=order, items=items)
+    html = render_template(
+        "user/invoice.html",
+        order=order,
+        items=items,
+        address=address   # 🔥 ADD THIS
+    )
 
     pdf = generate_pdf(html)
     if not pdf:
         flash("Error generating PDF", "danger")
         return redirect('/user/my-orders')
 
-    # Prepare response
     response = make_response(pdf.getvalue())
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f"attachment; filename=invoice_{order_id}.pdf"
