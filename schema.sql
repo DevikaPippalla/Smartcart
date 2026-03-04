@@ -52,7 +52,7 @@ CREATE TABLE orders (
     razorpay_payment_id TEXT,
     amount REAL,
     payment_status TEXT,
-    address_id INTEGER NOT NULL,
+    address_id INTEGER,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
